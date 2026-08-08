@@ -11,13 +11,14 @@ const API_URL = import.meta.env.VITE_API_URL ||
 
 function App() {
   const [problems, setProblems] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingProblem, setEditingProblem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('');
-  const [filterType, setFilterType] = useState('');
+  const [filterTopic, setFilterTopic] = useState('');
 
   const fetchProblems = async () => {
     setLoading(true);
@@ -33,8 +34,18 @@ function App() {
     }
   };
 
+  const fetchTopics = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/topics`);
+      setTopics(res.data || []);
+    } catch (err) {
+      console.error('Could not fetch topics', err);
+    }
+  };
+
   useEffect(() => {
     fetchProblems();
+    fetchTopics();
   }, []);
 
   const handleDelete = async (id) => {
@@ -59,15 +70,14 @@ function App() {
   };
 
   const filteredProblems = problems.filter(problem => {
+    const topicName = problem.topic?.name || (typeof problem.topic === 'string' ? problem.topic : problem.type) || '';
+    
     const matchesSearch = problem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         problem.type.toLowerCase().includes(searchTerm.toLowerCase());
+                         topicName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDifficulty = filterDifficulty ? problem.difficulty === filterDifficulty : true;
-    const matchesType = filterType ? problem.type === filterType : true;
-    return matchesSearch && matchesDifficulty && matchesType;
+    const matchesTopic = filterTopic ? (problem.topic?._id === filterTopic || topicName === filterTopic) : true;
+    return matchesSearch && matchesDifficulty && matchesTopic;
   });
-
-  // Get unique types for filter dropdown
-  const uniqueTypes = [...new Set(problems.map(p => p.type))];
 
   return (
     <div className="container">
@@ -118,15 +128,15 @@ function App() {
             <option value="Hard">Hard</option>
           </select>
 
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <select value={filterTopic} onChange={(e) => setFilterTopic(e.target.value)}>
             <option value="">All Topics</option>
-            {uniqueTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {topics.map(t => (
+              <option key={t._id} value={t._id}>{t.name}</option>
             ))}
           </select>
 
           <button 
-            onClick={fetchProblems}
+            onClick={() => { fetchProblems(); fetchTopics(); }}
             style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '0.5rem' }}
             title="Refresh"
           >
@@ -143,7 +153,7 @@ function App() {
       ) : error ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--danger)' }}>
           <p>{error}</p>
-          <button onClick={fetchProblems} style={{ marginTop: '1rem', background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: '4px' }}>Retry</button>
+          <button onClick={() => { fetchProblems(); fetchTopics(); }} style={{ marginTop: '1rem', background: 'var(--danger)', color: 'white', padding: '0.5rem 1rem', border: 'none', borderRadius: '4px' }}>Retry</button>
         </div>
       ) : filteredProblems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '12px', border: '2px dashed var(--border-color)' }}>
@@ -167,7 +177,7 @@ function App() {
             </div>
             <ProblemForm 
               onClose={closeModal} 
-              onSuccess={() => { fetchProblems(); closeModal(); }}
+              onSuccess={() => { fetchProblems(); fetchTopics(); closeModal(); }}
               editingProblem={editingProblem}
               apiUrl={API_URL}
             />

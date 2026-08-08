@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const Problem = require('./models/Problem');
+const Topic = require('./models/Topic');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,6 +37,52 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Helper function to resolve topic ObjectId or topic name string
+async function resolveTopicId(topicInput) {
+  if (!topicInput) {
+    let defaultTopic = await Topic.findOne({ name: 'General' });
+    if (!defaultTopic) {
+      defaultTopic = await Topic.create({ name: 'General', description: 'General DSA Topic' });
+    }
+    return defaultTopic._id;
+  }
+
+  if (mongoose.Types.ObjectId.isValid(topicInput)) {
+    const existing = await Topic.findById(topicInput);
+    if (existing) return existing._id;
+  }
+
+  const topicName = String(topicInput).trim();
+  const topicDoc = await Topic.findOneAndUpdate(
+    { name: topicName },
+    { name: topicName, description: `${topicName} Topic` },
+    { upsert: true, returnDocument: 'after' }
+  );
+  return topicDoc._id;
+}
+
+// Helper to format notes into array entries
+function formatNotes(notesInput, confidenceInput) {
+  if (!notesInput) return [];
+  if (Array.isArray(notesInput)) return notesInput;
+  if (typeof notesInput === 'string') {
+    try {
+      const parsed = JSON.parse(notesInput);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      // String note
+    }
+    if (notesInput.trim()) {
+      return [{
+        content: notesInput.trim(),
+        confidence: confidenceInput || 'Medium',
+        createdAt: new Date(),
+      }];
+    }
+  }
+  return [];
+}
+
 // Routes
 
 // Health check
@@ -43,16 +90,44 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend is running' });
 });
 
+// Topic Routes
+app.get('/topics', async (req, res) => {
+  try {
+    const topics = await Topic.find().sort({ name: 1 });
+    res.json(topics);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/topics', async (req, res) => {
+  try {
+    const topic = await Topic.create(req.body);
+    res.status(201).json(topic);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Create problem
 app.post('/problems', upload.single('screenshot'), async (req, res) => {
   try {
+    const rawTopic = req.body.topic || req.body.type;
+    const topicId = await resolveTopicId(rawTopic);
+    const notesArray = formatNotes(req.body.notes, req.body.confidence);
+
     const problemData = {
       ...req.body,
+      topic: topicId,
+      notes: notesArray,
       screenshot: req.file ? `/uploads/${req.file.filename}` : null,
     };
+    delete problemData.type;
+
     const problem = new Problem(problemData);
     await problem.save();
-    res.status(201).json(problem);
+    const populated = await problem.populate('topic', 'name');
+    res.status(201).json(populated);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -63,7 +138,7 @@ app.get('/problems/:id', async (req, res) => {
   try {
     let query = Problem.findById(req.params.id);
     if (Problem.schema.path('topic')) {
-      query = query.populate('topic');
+      query = query.populate('topic', 'name');
     }
     const problem = await query;
     if (!problem) return res.status(404).json({ error: 'Problem not found' });
@@ -81,16 +156,23 @@ app.get('/problems', async (req, res) => {
 
     if (difficulty) filter.difficulty = difficulty;
     if (status) filter.status = status;
-    if (topic) filter.topic = topic;
-    if (type) filter.type = type;
+    
+    if (topic) {
+      if (mongoose.Types.ObjectId.isValid(topic)) {
+        filter.topic = topic;
+      } else {
+        const foundTopic = await Topic.findOne({ name: new RegExp(`^${topic}$`, 'i') });
+        if (foundTopic) filter.topic = foundTopic._id;
+      }
+    }
+
     if (search) {
       const hasTextIndex = Problem.schema.indexes().some(idx => idx[0] && Object.values(idx[0]).includes('text'));
       if (hasTextIndex) {
         filter.$text = { $search: search };
       } else {
         filter.$or = [
-          { title: { $regex: search, $options: 'i' } },
-          { type: { $regex: search, $options: 'i' } }
+          { title: { $regex: search, $options: 'i' } }
         ];
       }
     }
@@ -129,7 +211,6 @@ app.put('/problems/:id', upload.single('screenshot'), async (req, res) => {
     if (req.file) {
       updateData.screenshot = `/uploads/${req.file.filename}`;
       
-      // Optionally delete old screenshot
       const oldProblem = await Problem.findById(id);
       if (oldProblem && oldProblem.screenshot) {
         const oldPath = path.join(__dirname, oldProblem.screenshot);
@@ -139,11 +220,34 @@ app.put('/problems/:id', upload.single('screenshot'), async (req, res) => {
       }
     }
 
+    if (updateData.topic || updateData.type) {
+      updateData.topic = await resolveTopicId(updateData.topic || updateData.type);
+      delete updateData.type;
+    }
+
+    // If new note content is provided in update, append to notes array
+    if (updateData.newNoteContent) {
+      const existingProblem = await Problem.findById(id);
+      const existingNotes = existingProblem ? existingProblem.notes : [];
+      updateData.notes = [
+        ...existingNotes,
+        {
+          content: updateData.newNoteContent.trim(),
+          confidence: updateData.confidence || 'Medium',
+          createdAt: new Date(),
+        }
+      ];
+      delete updateData.newNoteContent;
+    } else if (typeof updateData.notes === 'string') {
+      updateData.notes = formatNotes(updateData.notes, updateData.confidence);
+    }
+
     const problem = await Problem.findByIdAndUpdate(
       id,
       updateData,
-      { new: true, runValidators: true }
-    );
+      { returnDocument: 'after', runValidators: true }
+    ).populate('topic', 'name');
+
     if (!problem) return res.status(404).json({ error: 'Problem not found' });
     res.json(problem);
   } catch (error) {
