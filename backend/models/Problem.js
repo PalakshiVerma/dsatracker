@@ -1,3 +1,30 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: Problem Mongoose Model & Schema Definition
+ * LOCATION: backend/models/Problem.js
+ * 
+ * MONGODB CONCEPT IMPLEMENTATION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - Central document model consumed by POST /problems, GET /problems, GET /problems/:id, PUT /problems/:id, DELETE /problems/:id.
+ * 
+ * 2. Schema Modeling:
+ *    - Core Problem schema defining field types, enum constraints ('Easy'/'Medium'/'Hard', 'Solved'/'Revise Later'/'Important'), defaults, and timestamps.
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - REFERENCING: `topic` references `Topic` model via mongoose.Schema.Types.ObjectId (1-to-Many normalized relationship).
+ *    - EMBEDDING: `notes` embeds `noteEntrySchema` array (1-to-Few bounded sub-document history containing content, confidence, createdAt).
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Single-field indexes: `difficulty: 1`, `status: 1`, `topic: 1`, `dateSolved: -1`.
+ *    - Compound index: `{ status: 1, difficulty: 1 }` for multi-attribute filter queries.
+ *    - Full-text search index: `{ title: 'text', 'notes.content': 'text' }` for $text search queries.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - Primary source collection for MongoDB aggregation pipelines ($group, $lookup, $unwind, $project, $cond, $dateToString).
+ * ============================================================================
+ */
+
 const mongoose = require('mongoose');
 
 // Embedded sub-schema: revision/attempt history.

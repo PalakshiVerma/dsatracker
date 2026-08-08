@@ -1,3 +1,30 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: Analytics Progress Dashboard View Component
+ * LOCATION: frontend/src/components/StatsDashboard.jsx
+ * 
+ * MONGODB CONCEPT CONSUMPTION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - Consumes analytical endpoints GET /stats/summary, GET /stats/topic-progress, and GET /stats/timeline.
+ * 
+ * 2. Schema Modeling:
+ *    - Visualizes aggregated metrics derived from Topic and Problem schemas.
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - Displays topic mastery progress produced by joining `topics` collection via $lookup.
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Displays analytical aggregations calculated efficiently over indexed fields.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - Direct UI visualizer for MongoDB Aggregation Pipelines:
+ *      a) GET /stats/summary: Rendered as Overview Metric Cards (Difficulty & Status $group counts).
+ *      b) GET /stats/topic-progress: Rendered as Topic Mastery Progress Bars ($group, $cond, $lookup, $unwind, $project).
+ *      c) GET /stats/timeline: Rendered as Monthly Activity Momentum cards ($dateToString, $group).
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart3, TrendingUp, Layers, CheckCircle2, Bookmark, Flame } from 'lucide-react';
