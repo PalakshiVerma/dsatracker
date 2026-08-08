@@ -275,6 +275,76 @@ app.delete('/problems/:id', async (req, res) => {
   }
 });
 
+// Aggregation Routes for Analytics Dashboard
+
+// 1. Counts grouped by difficulty and status
+app.get('/stats/summary', async (req, res) => {
+  try {
+    const byDifficulty = await Problem.aggregate([
+      { $group: { _id: '$difficulty', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
+
+    const byStatus = await Problem.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+
+    res.json({ byDifficulty, byStatus });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. Progress per topic joined with Topic collection
+app.get('/stats/topic-progress', async (req, res) => {
+  try {
+    const progress = await Problem.aggregate([
+      { $group: {
+          _id: '$topic',
+          totalSolved: { $sum: 1 },
+          easy: { $sum: { $cond: [{ $eq: ['$difficulty', 'Easy'] }, 1, 0] } },
+          medium: { $sum: { $cond: [{ $eq: ['$difficulty', 'Medium'] }, 1, 0] } },
+          hard: { $sum: { $cond: [{ $eq: ['$difficulty', 'Hard'] }, 1, 0] } },
+      }},
+      { $lookup: {
+          from: 'topics',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'topicInfo',
+      }},
+      { $unwind: '$topicInfo' },
+      { $project: {
+          _id: 0,
+          topic: '$topicInfo.name',
+          totalSolved: 1,
+          easy: 1,
+          medium: 1,
+          hard: 1,
+      }},
+      { $sort: { totalSolved: -1 } },
+    ]);
+    res.json(progress);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 3. Practice trend over time
+app.get('/stats/timeline', async (req, res) => {
+  try {
+    const timeline = await Problem.aggregate([
+      { $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$dateSolved' } },
+          count: { $sum: 1 },
+      }},
+      { $sort: { _id: 1 } },
+    ]);
+    res.json(timeline);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
