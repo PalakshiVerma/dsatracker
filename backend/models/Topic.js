@@ -13,4 +13,7 @@ const topicSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// Constraint-enforcing index — unique topic name
+topicSchema.index({ name: 1 }, { unique: true });
+
 module.exports = mongoose.model('Topic', topicSchema);
