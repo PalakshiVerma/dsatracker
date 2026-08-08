@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: One-Time Legacy Schema Data Migration Script
+ * LOCATION: backend/scripts/migrate.js
+ * 
+ * MONGODB CONCEPT IMPLEMENTATION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - Performs direct batch read (`find`) and update (`updateOne`) operations on MongoDB collections.
+ * 
+ * 2. Schema Modeling:
+ *    - Converts legacy flat schema fields (`type: String` and `notes: String`) into the multi-schema architecture.
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - Creates `Topic` records from string types and converts `Problem.type` into `Topic._id` references (Referencing).
+ *    - Wraps plain string notes into embedded `notes` array objects (`noteEntrySchema`) (Embedding).
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Ensures topic names are inserted cleanly to conform with unique B-Tree indexes on Topic.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - Prepares normalized document structures required for multi-collection aggregation pipelines ($lookup).
+ * ============================================================================
+ */
+
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const Topic = require('../models/Topic');

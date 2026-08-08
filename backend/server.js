@@ -1,3 +1,36 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: Express API Server & Database Controller Entry Point
+ * LOCATION: backend/server.js
+ * 
+ * MONGODB CONCEPT IMPLEMENTATION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - POST /problems (Create problem)
+ *    - GET /problems (Read all problems with server-side filtering & pagination)
+ *    - GET /problems/:id (Read single problem by ID)
+ *    - PUT /problems/:id (Update problem with `runValidators: true` & `returnDocument: 'after'`)
+ *    - DELETE /problems/:id (Delete problem by ID)
+ *    - GET /topics & POST /topics (Topic CRUD operations)
+ * 
+ * 2. Schema Modeling:
+ *    - Enforces Problem and Topic schema constraints across all API endpoints.
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - Executes `.populate('topic', 'name')` to hydrate referenced Topic ObjectIds on Problem queries.
+ *    - Manages creation and appending of embedded `notes` array entries with confidence levels.
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Executes `.find(filter)` queries utilizing single-field, compound, and text indexes.
+ *    - Uses `$text: { $search: search }` for indexed full-text searching.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - GET /stats/summary: Uses $group and $sort for difficulty & status breakdown.
+ *    - GET /stats/topic-progress: Uses $group, $cond, $lookup, $unwind, $project, $sort to calculate topic progress.
+ *    - GET /stats/timeline: Uses $dateToString, $group, $sort to calculate monthly activity trends.
+ * ============================================================================
+ */
+
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');

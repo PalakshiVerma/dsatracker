@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: Single Problem Display Card Component
+ * LOCATION: frontend/src/components/ProblemCard.jsx
+ * 
+ * MONGODB CONCEPT CONSUMPTION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - Renders individual document fields and triggers edit (PUT) & delete (DELETE) actions.
+ * 
+ * 2. Schema Modeling:
+ *    - Visualizes Problem schema fields (title, difficulty badge, status tag, dateSolved, screenshot).
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - REFERENCING: Renders populated topic name (`problem.topic?.name` or `problem.type`).
+ *    - EMBEDDING: Renders `notesList` array showing revision history with confidence level badges (`High 🟢`, `Medium 🟡`, `Low 🔴`).
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Displays records sorted by indexed `dateSolved: -1` and filtered by indexed attributes.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - Renders granular document details whose summary metrics power the aggregation dashboard.
+ * ============================================================================
+ */
+
 import React from 'react';
 import { ExternalLink, Edit3, Trash2, Calendar, Tag, Globe, CheckCircle2 } from 'lucide-react';
 

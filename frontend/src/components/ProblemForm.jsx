@@ -1,3 +1,29 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: Problem Creation & Editing Modal Form Component
+ * LOCATION: frontend/src/components/ProblemForm.jsx
+ * 
+ * MONGODB CONCEPT CONSUMPTION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - Sends POST /problems (Create new problem) and PUT /problems/:id (Update existing problem).
+ *    - Fetches topics via GET /topics to populate the topic selection dropdown.
+ * 
+ * 2. Schema Modeling:
+ *    - Captures input fields conforming to Problem schema (title, difficulty enum, status enum, platform, URL, date).
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - REFERENCING: Submits selected Topic ObjectId reference (`topic`) to link with `Topic` model.
+ *    - EMBEDDING: Captures new revision note content + confidence rating (`Low`, `Medium`, `High`) to append to embedded `notes` array.
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Submits structured status and difficulty fields matching backend compound and single-field indexes.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - Created/updated documents immediately feed into backend aggregation calculations.
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 

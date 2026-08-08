@@ -1,3 +1,28 @@
+/**
+ * ============================================================================
+ * FILE PURPOSE: Main Root Application Component & Top-Level Controller
+ * LOCATION: frontend/src/App.jsx
+ * 
+ * MONGODB CONCEPT CONSUMPTION MATRIX:
+ * ----------------------------------------------------------------------------
+ * 1. CRUD Operations:
+ *    - Triggers GET /problems (list & pagination) and DELETE /problems/:id.
+ *    - Triggers GET /topics to fetch normalized topic options for filters.
+ * 
+ * 2. Schema Modeling:
+ *    - Displays data conforming to Problem and Topic schemas.
+ * 
+ * 3. Embedding vs Referencing Relationships:
+ *    - Filters problems by referenced Topic ObjectId / name (`problem.topic?.name` or `problem.topic?._id`).
+ * 
+ * 4. Indexing for Query Performance:
+ *    - Consumes paginated, indexed query responses from backend server.
+ * 
+ * 5. Aggregation Pipelines:
+ *    - Integrates top header tab navigation toggling between Problem List and `<StatsDashboard />` (which renders aggregation stats).
+ * ============================================================================
+ */
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Search, Filter, RefreshCw, BarChart2, List } from 'lucide-react';
