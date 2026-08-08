@@ -21,3 +21,5 @@ frontend/dist/
 # OS files
 .DS_Store
 Thumbs.db
+conceptupdates.md
+theory_and_rationale.md
