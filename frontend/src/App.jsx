@@ -4,7 +4,10 @@ import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
 import ProblemForm from './components/ProblemForm';
 import ProblemList from './components/ProblemList';
 
-const API_URL = 'https://dsatracker-project2-14.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : 'https://dsatracker-project2-14.onrender.com');
 
 function App() {
   const [problems, setProblems] = useState([]);
@@ -20,7 +23,8 @@ function App() {
     setLoading(true);
     try {
       const response = await axios.get(`${API_URL}/problems`);
-      setProblems(response.data);
+      const fetchedData = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      setProblems(fetchedData);
       setError(null);
     } catch (err) {
       setError('Could not fetch problems. Is the backend running?');

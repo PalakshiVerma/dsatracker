@@ -58,11 +58,63 @@ app.post('/problems', upload.single('screenshot'), async (req, res) => {
   }
 });
 
-// Read all problems
+// Read single problem
+app.get('/problems/:id', async (req, res) => {
+  try {
+    let query = Problem.findById(req.params.id);
+    if (Problem.schema.path('topic')) {
+      query = query.populate('topic');
+    }
+    const problem = await query;
+    if (!problem) return res.status(404).json({ error: 'Problem not found' });
+    res.json(problem);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Read all problems (supports server-side filtering, search, and pagination)
 app.get('/problems', async (req, res) => {
   try {
-    const problems = await Problem.find().sort({ dateSolved: -1 });
-    res.json(problems);
+    const { difficulty, status, topic, type, search, page = 1, limit = 20 } = req.query;
+    const filter = {};
+
+    if (difficulty) filter.difficulty = difficulty;
+    if (status) filter.status = status;
+    if (topic) filter.topic = topic;
+    if (type) filter.type = type;
+    if (search) {
+      const hasTextIndex = Problem.schema.indexes().some(idx => idx[0] && Object.values(idx[0]).includes('text'));
+      if (hasTextIndex) {
+        filter.$text = { $search: search };
+      } else {
+        filter.$or = [
+          { title: { $regex: search, $options: 'i' } },
+          { type: { $regex: search, $options: 'i' } }
+        ];
+      }
+    }
+
+    let query = Problem.find(filter);
+    if (Problem.schema.path('topic')) {
+      query = query.populate('topic', 'name');
+    }
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
+    const problems = await query
+      .sort({ dateSolved: -1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
+
+    const total = await Problem.countDocuments(filter);
+    res.json({
+      data: problems,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum) || 1
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -87,7 +139,12 @@ app.put('/problems/:id', upload.single('screenshot'), async (req, res) => {
       }
     }
 
-    const problem = await Problem.findByIdAndUpdate(id, updateData, { new: true });
+    const problem = await Problem.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    if (!problem) return res.status(404).json({ error: 'Problem not found' });
     res.json(problem);
   } catch (error) {
     res.status(400).json({ error: error.message });
