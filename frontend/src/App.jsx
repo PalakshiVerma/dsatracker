@@ -30,10 +30,12 @@ import ProblemForm from './components/ProblemForm';
 import ProblemList from './components/ProblemList';
 import StatsDashboard from './components/StatsDashboard';
 
-const API_URL = import.meta.env.VITE_API_URL || 
+const rawApiUrl = import.meta.env.VITE_API_URL || 
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5000'
-    : 'https://dsatracker-project2-14.onrender.com');
+    : '');
+
+const API_URL = (rawApiUrl || 'http://localhost:5000').replace(/\/+$/, '');
 
 function App() {
   const [activeTab, setActiveTab] = useState('problems'); // 'problems' | 'stats'
