@@ -58,6 +58,7 @@ app.use(cors({
     if (
       allowedOrigins.includes(origin) ||
       /\.vercel\.app$/.test(new URL(origin).hostname) ||
+      /\.onrender\.com$/.test(new URL(origin).hostname) ||
       !process.env.FRONTEND_URL
     ) {
       return callback(null, true);
