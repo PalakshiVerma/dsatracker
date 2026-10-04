@@ -44,8 +44,31 @@ const Topic = require('./models/Topic');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+// Allowed origins for CORS (Localhost + configured FRONTEND_URL + Vercel apps)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      /\.vercel\.app$/.test(new URL(origin).hostname) ||
+      !process.env.FRONTEND_URL
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -118,7 +141,11 @@ function formatNotes(notesInput, confidenceInput) {
 
 // Routes
 
-// Health check
+// Root & Health check
+app.get('/', (req, res) => {
+  res.json({ status: 'OK', message: 'DSA Tracker Backend API is active' });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Backend is running' });
 });
