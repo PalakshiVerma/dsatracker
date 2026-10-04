@@ -1,6 +1,12 @@
 # DSA Problem Tracker
 
-A full-stack CRUD application designed to help students and developers keep track of their Data Structures and Algorithms (DSA) practice.
+A full-stack application designed to help students and developers track and analyze their Data Structures and Algorithms (DSA) practice.
+
+## 🚀 Live Demo
+
+- **Frontend App:** [https://dsatracker-pct6.onrender.com](https://dsatracker-pct6.onrender.com)
+- **Backend API:** [https://dsa-tracker-2ttg.onrender.com](https://dsa-tracker-2ttg.onrender.com)
+- **Database:** MongoDB Atlas
 
 ## The Problem
 
@@ -36,12 +42,16 @@ When practicing DSA questions, it's easy to lose track of what has been solved, 
    ```bash
    cd backend
    ```
-2. Create a `.env` file (see `.env.example`):
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file (see `.env.example`):
    ```bash
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/dsa_tracker
    ```
-3. Run the backend:
+4. Run the backend:
    ```bash
    npm start
    ```
@@ -52,7 +62,11 @@ When practicing DSA questions, it's easy to lose track of what has been solved, 
    ```bash
    cd frontend
    ```
-2. Start the development server:
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
    ```bash
    npm run dev
    ```
